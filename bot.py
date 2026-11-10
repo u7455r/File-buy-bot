@@ -39,7 +39,7 @@ def keep_alive():
     t.start()
 
 # -------------------- CONFIGURATION --------------------
-TOKEN = "8968939053:AAENHFYxf3RHDp7f7z_x4-HOWU9Fh6XlIQ4"
+TOKEN = "8968939053:AAGQRj4LXoa_i3FP8q_MuUrKNVrkS1BtLo8"
 ADMIN_IDS = [8298133943]  # Telegram user ID
 CHANNELS = ["@bdgiveaways24", "@bdgivewaychat", "@Pythonchecker1", "@ProApkHub_Official"] # Force join channels
 
