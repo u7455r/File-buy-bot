@@ -3,6 +3,8 @@ import sqlite3
 import logging
 import re
 from datetime import datetime, timedelta
+from threading import Thread
+from http.server import HTTPServer, BaseHTTPRequestHandler
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 from telegram.ext import (
     Application,
@@ -14,15 +16,37 @@ from telegram.ext import (
 )
 from telegram.constants import ParseMode
 
+# -------------------- 24/7 KEEP ALIVE WEB SERVER --------------------
+class SimpleHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/plain')
+        self.end_headers()
+        self.wfile.write(b"Bot is Running 24/7!")
+
+    def log_message(self, format, *args):
+        # Console spamming bondho rakhar jonno log off
+        return
+
+def run_server():
+    port = int(os.environ.get("PORT", 8080))
+    server = HTTPServer(('0.0.0.0', port), SimpleHandler)
+    server.serve_forever()
+
+def keep_alive():
+    t = Thread(target=run_server)
+    t.daemon = True
+    t.start()
+
 # -------------------- CONFIGURATION --------------------
 TOKEN = "8968939053:AAENHFYxf3RHDp7f7z_x4-HOWU9Fh6XlIQ4"
-ADMIN_IDS = [8298133943]  # Replace with your Telegram user IDs (integers)
+ADMIN_IDS = [8298133943]  # Telegram user ID
 CHANNELS = ["@bdgiveaways24", "@bdgivewaychat", "@Pythonchecker1", "@ProApkHub_Official"] # Force join channels
 
 # Bonus amounts
 WELCOME_BONUS = 1
 REFERRAL_BONUS_REFERRER = 2
-REFERRAL_BONUS_REFERRED = 0 #isko 0 hi rhene dena
+REFERRAL_BONUS_REFERRED = 0
 
 # Enable logging
 logging.basicConfig(
@@ -149,7 +173,6 @@ def use_redeem_code(user_id, code):
     if expiry and datetime.now() > datetime.strptime(expiry, "%Y-%m-%d %H:%M:%S"):
         conn.close()
         return False, "❌ Code expired."
-    # Update usage
     new_used_count = used_count + 1
     new_used_by = ','.join(used_by_list + [str(user_id)])
     c.execute("UPDATE redeem_codes SET used_count = ?, used_by = ? WHERE code = ?", (new_used_count, new_used_by, code))
@@ -242,12 +265,10 @@ def get_all_users():
     return [row[0] for row in users]
 
 def escape_markdown(text: str) -> str:
-    """Escape markdown special characters."""
     escape_chars = r'_*[]()~`>#+-=|{}.!'
     return re.sub(f'([{re.escape(escape_chars)}])', r'\\\1', text)
 
 async def check_force_join(user_id, context: ContextTypes.DEFAULT_TYPE):
-    """Check if user is member of all required channels."""
     for channel in CHANNELS:
         try:
             member = await context.bot.get_chat_member(chat_id=channel, user_id=user_id)
@@ -258,7 +279,6 @@ async def check_force_join(user_id, context: ContextTypes.DEFAULT_TYPE):
     return True
 
 async def force_join_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Send message with force join buttons."""
     keyboard = []
     for channel in CHANNELS:
         keyboard.append([InlineKeyboardButton(f"Join {channel}", url=f"https://t.me/{channel[1:]}")])
@@ -532,7 +552,6 @@ async def handle_admin_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     text = update.message.text.strip()
 
-    # File price input
     if context.user_data.get('awaiting_file_price'):
         try:
             price = int(text)
@@ -556,7 +575,6 @@ async def handle_admin_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
         context.user_data.pop('temp_file_name', None)
         return
 
-    # Broadcast
     if context.user_data.get('awaiting_broadcast'):
         broadcast_text = text
         users = get_all_users()
@@ -572,7 +590,6 @@ async def handle_admin_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
         context.user_data['awaiting_broadcast'] = False
         return
 
-    # Create redeem code
     if context.user_data.get('awaiting_redeem_create'):
         parts = text.split()
         if len(parts) != 3:
@@ -602,7 +619,6 @@ async def handle_admin_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
         context.user_data['awaiting_redeem_create'] = False
         return
 
-    # Ban user
     if context.user_data.get('awaiting_ban'):
         try:
             target_id = int(text)
@@ -615,7 +631,6 @@ async def handle_admin_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
         context.user_data['awaiting_ban'] = False
         return
 
-    # Unban user
     if context.user_data.get('awaiting_unban'):
         try:
             target_id = int(text)
@@ -628,7 +643,6 @@ async def handle_admin_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
         context.user_data['awaiting_unban'] = False
         return
 
-    # Admin menu buttons
     if text == "👑 Admin Panel":
         await admin_panel(update, context)
     elif text == "📢 Broadcast":
@@ -738,6 +752,10 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # -------------------- MAIN --------------------
 def main():
+    # Keep-Alive Server chalu kora (UptimeRobot er jonno)
+    keep_alive()
+
+    # Telegram bot start kora
     app = Application.builder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
