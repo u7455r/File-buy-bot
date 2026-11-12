@@ -39,13 +39,13 @@ def keep_alive():
     t.start()
 
 # -------------------- CONFIGURATION --------------------
-TOKEN = "8968939053:AAGQRj4LXoa_i3FP8q_MuUrKNVrkS1BtLo8"
+TOKEN = "8968939053:AAFtyTiXIKIFxsfqg4P-cu5Vvx-9X2tvt0M"
 ADMIN_IDS = [8298133943]  # Telegram user ID
 CHANNELS = ["@bdgiveaways24", "@bdgivewaychat", "@Pythonchecker1", "@ProApkHub_Official"] # Force join channels
 
 # Bonus amounts
-WELCOME_BONUS = 1
-REFERRAL_BONUS_REFERRER = 2
+WELCOME_BONUS = 2
+REFERRAL_BONUS_REFERRER = 5
 REFERRAL_BONUS_REFERRED = 0
 
 # Enable logging
